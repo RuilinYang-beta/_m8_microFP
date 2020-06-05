@@ -13,3 +13,47 @@ data Stream = Stream [Char]
               deriving (Eq, Show)
 
 
+
+
+data Parser r = P {
+    runParser :: Stream -> [(r, Stream)]
+}
+
+
+instance Functor Parser where
+    fmap func parsera = P (\input -> [ (func r, rest) | (r, rest) <- runParser parsera input])
+
+
+char :: Char -> Parser Char
+char c = P func 
+       where func (Stream [])      = []
+             func (Stream (x:xs))  | x == c    = [(c, (Stream xs))]
+                                   | otherwise = []
+
+
+failure :: Parser a 
+failure = P func 
+        where func = (\input -> [])
+
+
+instance Applicative Parser where
+    -- pure :: a -> f a
+    pure sth = P (\input -> [(sth, input)])
+    -- <*> :: f (a -> b) -> f a -> f b
+    parsera <*> parserb = P func 
+        where func = (\input ->  [(f r, rem')| (f, rem) <- runParser parsera input, 
+                                               (r, rem') <- runParser parserb rem])
+
+
+-- ????????? better way to write <|> 
+instance Alternative Parser where 
+    -- empty :: f a
+    empty = failure
+    -- (<|>) :: fa -> fa -> fa
+    parsera <|> parserb = P func 
+        where func = (\input ->  let res1 = runParser parsera input in 
+                                 if length res1 /= 0 then res1 else runParser parserb input)
+
+
+p1 = char '1'
+p2 = char '2'
