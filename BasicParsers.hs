@@ -34,8 +34,8 @@ between :: Parser a -> Parser b -> Parser c -> Parser b
 between pa pb pc = pure id <*> (pa *> (pb <* pc))
 
 
-whitepsace :: Parser a -> Parser a 
-whitepsace pa = between skip pa skip 
+whitespace :: Parser a -> Parser a
+whitespace pa = between skip pa skip
 
 
 skip :: Parser [Char]
@@ -102,7 +102,7 @@ testBetween = runParser $ between (char '(') letter (char ')')
 
 testSkip = runParser $ skip
 
-testWhitespace = runParser $ whitepsace letter 
+testWhitespace = runParser $ whitespace letter
 
 testSep1 = runParser $ sep1 letter (char ',')
 
