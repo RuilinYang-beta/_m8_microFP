@@ -12,28 +12,15 @@ import Test.QuickCheck
 data Stream = Stream [Char]
               deriving (Eq, Show)
 
-
-
-
+-- ---------- FP1.1 ----------
 data Parser r = P {
     runParser :: Stream -> [(r, Stream)]
 }
 
 
+-- ---------- FP1.2 FP1.5 FP1.6----------
 instance Functor Parser where
     fmap func parsera = P (\input -> [ (func r, rest) | (r, rest) <- runParser parsera input])
-
-
-char :: Char -> Parser Char
-char c = P func 
-       where func (Stream [])      = []
-             func (Stream (x:xs))  | x == c    = [(c, (Stream xs))]
-                                   | otherwise = []
-
-
-failure :: Parser a 
-failure = P func 
-        where func = (\input -> [])
 
 
 instance Applicative Parser where
@@ -45,7 +32,7 @@ instance Applicative Parser where
                                                (r, rem') <- runParser parserb rem])
 
 
--- ????????? better way to write <|> 
+-- ???????????? better way to write <|> 
 instance Alternative Parser where 
     -- empty :: f a
     empty = failure
@@ -55,5 +42,34 @@ instance Alternative Parser where
                                  if length res1 /= 0 then res1 else runParser parserb input)
 
 
+-- ---------- FP1.3 ----------
+char :: Char -> Parser Char
+char c = P func 
+       where func (Stream [])      = []
+             func (Stream (x:xs))  | x == c    = [(c, (Stream xs))]
+                                   | otherwise = []
+
+-- ---------- FP1.4 ----------
+failure :: Parser a 
+failure = P func 
+        where func = (\input -> [])
+
+
+
+
+-- ---------- temp section ----------
+
 p1 = char '1'
 p2 = char '2'
+
+
+
+
+
+
+
+
+
+
+
+
