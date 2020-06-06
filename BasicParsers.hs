@@ -74,12 +74,12 @@ string (x:xs) = pure (:) <*> char x <*> string xs
 
 identifier :: Parser String 
 identifier = between skip p skip 
-    where p = many (letter <|> dig)
+    where p = some (letter <|> dig)
 
 
 integer :: Parser Integer 
 integer = fmap f $ between skip p skip 
-    where p = many (dig)
+    where p = some (dig)
           f = (\input -> read input :: Integer)        
 
 symbol :: String -> Parser String 

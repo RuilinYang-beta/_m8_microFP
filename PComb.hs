@@ -51,8 +51,8 @@ char c = P func
 
 -- ---------- FP1.4 ----------
 failure :: Parser a 
-failure = P func 
-        where func = (\input -> [])
+failure = P func
+        where func = (\_ -> [])
 
 
 
