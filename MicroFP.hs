@@ -13,6 +13,26 @@ import Test.QuickCheck
 import Test.QuickCheck.All
 
 
+-- ---------- FP3.1 ----------
+
+data Func = Assign String [Expr] Expr
+
+data Expr = Const      Integer
+		  | Var        String 
+		  | Add        Expr Expr
+		  | Sub        Expr Expr
+		  | Mul        Expr Expr
+		  | FunCall    String [Expr]
+		  | If         Cond Expr Expr
+		  deriving Show
+
+
+data Cond = Cond Ord Expr Expr
+          deriving Show 
+
+
+data Ord = Gt | Eq | Lt
+         deriving Show 
 
 
 
