@@ -27,9 +27,8 @@ data Expr = Constant   Integer
           deriving (Show, Eq)
 
 
-data Cond = Cond Order Expr Expr
+data Cond = Cond Expr Order Expr
           deriving (Show, Eq)
-
 
 data Order = Gt | Eq | Lt
            deriving (Eq)
@@ -45,11 +44,11 @@ instance Show Order where
 
 fibonacci = Assign "fibonacci" [(Var "n")] (Add (FunCall "fibonacci" [(Sub (Var "n") (Constant 1))]) (FunCall "fibonacci" [(Sub (Var "n") (Constant 2))]) )
 
-fib = Assign "fib" [(Var "n")] (If (Cond Lt (Var "n") (Constant 3)) (Constant 1) (Add (FunCall "fib" [(Sub (Var "n") (Constant 1))]) (FunCall "fib" [(Sub (Var "n") (Constant 2))])))
+fib = Assign "fib" [(Var "n")] (If (Cond (Var "n") Lt (Constant 3)) (Constant 1) (Add (FunCall "fib" [(Sub (Var "n") (Constant 1))]) (FunCall "fib" [(Sub (Var "n") (Constant 2))])))
 
 sum' = Assign "sum" [(Var "a")] (Add (FunCall "sum" [(Sub (Var "a") (Constant 1))]) (Var "a"))
 
-div' = Assign "div" [(Var "x"), (Var "y")] (If (Cond Lt (Var "x") (Var "y")) (Constant 0) (Add (Constant 1) (FunCall "div" [(Sub (Var "x") (Var "y")), (Var "y")])))
+div' = Assign "div" [(Var "x"), (Var "y")] (If (Cond (Var "x") Lt (Var "y")) (Constant 0) (Add (Constant 1) (FunCall "div" [(Sub (Var "x") (Var "y")), (Var "y")])))
 
 twice = Assign "twice" [(Var "f"), (Var "x")] (FunCall "f" [(FunCall "f" [(Var "x")])])
 
@@ -61,6 +60,10 @@ eleven = Assign "eleven" [] (FunCall "inc" [(Constant 10)])
 
 
 -- ---------- FP3.3 ----------
+
+-- `pretty` takes care of things of `Func` data type
+-- `oneExpr` and `manyExpr` deals with things of `Expr` type
+
 pretty :: Func -> String 
 pretty (Assign funcname args funcbody) = funcname ++ " " ++ argString ++ " := "++ funcbodyString ++ ";"
     where argString      = manyExpr args " "
@@ -103,10 +106,10 @@ oneExpr (If cond eThen eElse) =  "if " ++
                                  (oneExpr eElse) ++
                                  "\n}"
 
-
+-- helper of `oneExpr`
 -- resulting in a string of condition surrounded by ()
 condString :: Cond -> String 
-condString (Cond ord e1 e2) = "(" ++ (oneExpr e1) ++ " " ++ (show ord) ++ " " ++ (oneExpr e2) ++ ")"
+condString (Cond e1 ord e2) = "(" ++ (oneExpr e1) ++ " " ++ (show ord) ++ " " ++ (oneExpr e2) ++ ")"
 
 
 -- ---------- FP3.4 ----------
@@ -116,10 +119,10 @@ temp = zip [(Var "x"), (Var "y")] [(Constant 1),(Constant 2)]
 -- does it need a db to store multiple functions??????
 {-
 -- about functions: 
-	basic evaluation:         `fib` `div` `add` maybe `main`
-	need pattern matching:    `sum` `fibonacci`
-	need partial application: `inc` 
-	need higher order func:   `twice`
+  basic evaluation:         `fib` `div` `add` maybe `main`
+  need pattern matching:    `sum` `fibonacci`
+  need partial application: `inc` 
+  need higher order func:   `twice`
 -}
 -- eval :: Func -> [Expr] -> [Expr] -> Integer
 -- eval (Assign funcname args funcbody) argsVal = something 
@@ -142,7 +145,7 @@ bindOneExpr (Add e1 e2) args vals   = (Add (bindOneExpr e1 args vals) (bindOneEx
 bindOneExpr (Sub e1 e2) args vals   = (Sub (bindOneExpr e1 args vals) (bindOneExpr e2 args vals))
 bindOneExpr (Mul e1 e2) args vals   = (Mul (bindOneExpr e1 args vals) (bindOneExpr e2 args vals))
 bindOneExpr (FunCall s argsF) args vals = FunCall s (bindListExpr argsF args vals)
-bindOneExpr (If (Cond order e1 e2) eThen eElse) args vals = (If (Cond order e1' e2') eThen' eElse')
+bindOneExpr (If (Cond e1 order e2) eThen eElse) args vals = (If (Cond e1' order e2') eThen' eElse')
     where [e1', e2', eThen', eElse'] = bindListExpr [e1, e2, eThen, eElse] args vals
 
 
@@ -155,10 +158,29 @@ bindOneExpr (If (Cond order e1 e2) eThen eElse) args vals = (If (Cond order e1' 
 -- 4 [Expr]: the resulting list of Expr after binding
 bindListExpr :: [Expr] -> [Expr] -> [Expr] -> [Expr]
 bindListExpr [] _ _           = []
-bindListExpr (x:xs) args vals = (bindOneExpr x args vals) : (bindListExpr xs args vals)
+bindListExpr (x:xs) args vals = bindOneExpr x args vals : bindListExpr xs args vals
 
 
 
+-- ???????????? how should `reduce` make use of `bind`??
+-- might have something to do with recursive function
+reduceOneExpr :: Expr -> Expr
+reduceOneExpr (Constant c)   = Constant c
+reduceOneExpr (Var v)        = Var v
+reduceOneExpr (Add (Constant c1) (Constant c2))    = Constant (c1+c2)
+reduceOneExpr (Add e1 e2)                          = Add (reduceOneExpr e1) (reduceOneExpr e2)
+reduceOneExpr (Sub (Constant c1) (Constant c2))    = Constant (c1-c2)
+reduceOneExpr (Sub e1 e2)                          = Sub (reduceOneExpr e1) (reduceOneExpr e2)
+reduceOneExpr (Mul (Constant c1) (Constant c2))    = Constant (c1*c2)
+reduceOneExpr (Mul e1 e2)                          = Mul (reduceOneExpr e1) (reduceOneExpr e2)
+reduceOneExpr (FunCall s args)                     = FunCall s (reduceListExpr args)
+reduceOneExpr (If (Cond e1 order e2) eThen eElse)  = (If (Cond e1' order e2') eThen' eElse')
+    where [e1', e2', eThen', eElse'] = reduceListExpr [e1, e2, eThen, eElse] 
+
+
+reduceListExpr :: [Expr] -> [Expr]
+reduceListExpr [] = []
+reduceListExpr (x:xs) = reduceOneExpr x : reduceListExpr xs
 
 
 -- QuickCheck: all prop_* tests
@@ -188,25 +210,36 @@ bindX   = [(Var "x")]
 val3    = [(Constant 10), (Constant 20), (Constant 30)]
 val2    = [(Constant 10), (Constant 20)]
 val1    = [(Constant 10)]
+
 testBindConst = putStrLn $ oneExpr $ bindOneExpr (Constant 99) bindX val3
 testBindVar   = putStrLn $ oneExpr $ bindOneExpr (Var "x") bindXY val2
 testBindVar'  = putStrLn $ oneExpr $ bindOneExpr (Var "z") bindXY val2
 testBindAdd   = putStrLn $ oneExpr $ bindOneExpr (Add (Var "x") (Var "y")) bindXY val3
 testBindSub   = putStrLn $ oneExpr $ bindOneExpr (Sub (Var "x") (Var "z")) bindXY val2
 testBindMul   = putStrLn $ oneExpr $ bindOneExpr (Mul (Constant 99) (Var "y")) bindXY val2
-testBindFunCall = putStrLn $ oneExpr $ bindOneExpr addfib bindXY val2
+
+testBindFunCallRaw :: Expr
+testBindFunCallRaw = bindOneExpr addfib bindXY val2
     where addfib = (Add (FunCall "fibonacci" [(Sub (Var "x") (Constant 1))]) (FunCall "fibonacci" [(Sub (Var "x") (Constant 2))]) )
-testBindIf = putStrLn $ oneExpr $ bindOneExpr ifexpr bindXY val2
-    where ifexpr = (If (Cond Lt (Var "x") (Var "y")) (Constant 0) (Add (Constant 1) (FunCall "div" [(Sub (Var "x") (Var "y")), (Var "y")])))
+testBindFunCall :: IO ()
+testBindFunCall = putStrLn $ oneExpr $ testBindFunCallRaw
+
+testBindIfRaw :: Expr
+testBindIfRaw = bindOneExpr ifexpr bindXY val2
+    where ifexpr = (If (Cond (Var "x") Lt (Var "y")) (Constant 0) (Add (Constant 1) (FunCall "div" [(Sub (Var "x") (Var "y")), (Var "y")])))
+testBindIf :: IO ()
+testBindIf = putStrLn $ oneExpr testBindIfRaw
 
 
+testReduceFunRaw :: Expr
+testReduceFunRaw = reduceOneExpr testBindFunCallRaw
+testReduceFun :: IO ()
+testReduceFun = putStrLn $ oneExpr $ testReduceFunRaw
 
-
-
-
-
-
-
+testReduceIfRaw :: Expr
+testReduceIfRaw = reduceOneExpr testBindIfRaw
+testReduceIf :: IO ()
+testReduceIf = putStrLn $ oneExpr $ testReduceIfRaw
 
 
 
