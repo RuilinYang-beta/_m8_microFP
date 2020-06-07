@@ -91,7 +91,7 @@ parens pa = between (char '(') pa (char ')')
 
 
 braces :: Parser a -> Parser a 
-braces pa = between (char '{') pa (char '}')
+braces br = between (char '{') br (char '}')
 
 
 -- ---------- temp section ----------
