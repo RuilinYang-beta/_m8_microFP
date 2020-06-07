@@ -15,7 +15,7 @@ import Test.QuickCheck.All
 
 -- ---------- FP3.1 ----------
 
-data Func = Assign String [Expr] Expr   -- in the last there's a ;
+data Func = Assign String [Expr] Expr  deriving Show -- in the last there's a ;
 
 data Expr = Constant   Integer
           | Var        String 
@@ -64,14 +64,51 @@ eleven = Assign "eleven" [] (FunCall "inc" [(Constant 10)])
 
 
 
+-- ---------- FP4.1 ----------
 
+term :: Parser Expr
+term = pure Mul <*> (expr <* (symbol "*")) <*> expr
+   <|> factor
 
+expr :: Parser Expr
+expr = pure Sub <*> (term <* (symbol "-")) <*> expr
+   <|> pure Add <*> (term <* (symbol "+")) <*> expr
+   <|> term
+
+cond :: Parser Cond
+cond = pure Cond <*> pure Gt <*> (expr <* (symbol ">")) <*> expr
+  -- <|> pure Cond <*> pure Lt <*> expr <* (symbol "<") <*> expr
+  -- <|> pure Cond <*> pure Eq <*> expr <* (symbol "==") <*> expr
+
+factor :: Parser Expr
+factor = parens expr
+     <|> pure If <*> (between (symbol "if") cond (symbol "then")) <*> expr <* (symbol "else") <*> expr
+     <|> pure Var <*> identifier
+     <|> pure Constant <*> integer
+
+func :: Parser Func
+func = pure Assign <*> identifier <*> sep1 idOrInt (symbol ",") <* (symbol ":=") <*> expr <* (symbol ";")
+
+idOrInt = pure Var <*> identifier
+      <|> pure Constant <*> integer
 
 -- QuickCheck: all prop_* tests
 return []
 check = $quickCheckAll
 
+-- --------- temp section -----------
 
+-- supply the following with (Stream something)
+
+testFactor = runParser $ factor
+
+testExpr = runParser $ expr
+
+testTerm = runParser $ term
+
+testCond = runParser $ cond
+
+testFunc = runParser $ func
 
 
 
