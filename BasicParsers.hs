@@ -100,33 +100,33 @@ braces pa = between (symbol "{") pa (symbol "}")
 running tests: testSomeFunctionName (Stream "input to parse")
 -}
 
-testLetter = runParser $ letter -- will parse a single letter and nothing else
+testLetter = runParser $ letter     -- will parse a single letter and nothing else
 
-testDigit = runParser $ dig -- will parse a single digit and nothing else
+testDigit = runParser $ dig         -- will parse a single digit and nothing else
 
-testBetween = runParser $ between (char '(') letter (char ')') -- will parse a letter between parentheses
+testBetween = runParser $ between (char '(') letter (char ')')       -- will parse a letter between parentheses
 
-testSkip = runParser $ skip -- this will by design parse whitespace to skip, not actually skip whitespace!
+testSkip = runParser $ skip         -- this will by design parse whitespace to skip, not actually skip whitespace!
 
-testWhitespace = runParser $ whitespace letter -- will parse a letter surrounded by whitespace, skipping the whitespace
+testWhitespace = runParser $ whitespace letter          -- will parse a letter surrounded by whitespace, skipping the whitespace
 
-testSep1 = runParser $ sep1 identifier (symbol "") -- will parse (1+) identifiers separated by spaces
+testSep1 = runParser $ sep1 identifier (symbol "")      -- will parse (1+) identifiers separated by spaces
 
-testSep1' = runParser $ sep1 identifier (symbol ",") -- will parse (1+) identifiers separated by commas
+testSep1' = runParser $ sep1 identifier (symbol ",")    -- will parse (1+) identifiers separated by commas
 
-testSep = runParser $ sep identifier (symbol "") -- will parse (0+) identifiers separated by spaces
+testSep = runParser $ sep identifier (symbol "")        -- will parse (0+) identifiers separated by spaces
 
 testOption = runParser $ option "not parsed" identifier -- will try to parse an identifier or result in "not parsed"
 
-testIdentifier = runParser $ identifier -- will parse an identifier and nothing else
+testIdentifier = runParser $ identifier                 -- will parse an identifier and nothing else
 
-testInteger = runParser $ integer -- will parse an integer and nothing else
+testInteger = runParser $ integer                       -- will parse an integer and nothing else
 
-testSymbol = runParser $ symbol "test" -- will parse the symbol "test" and nothing else
+testSymbol = runParser $ symbol "test"                  -- will parse the symbol "test" and nothing else
 
-testParens = runParser $ parens identifier -- will parse an identifier surrounded by parentheses and nothing else
+testParens = runParser $ parens identifier              -- will parse an identifier surrounded by parentheses and nothing else
 
-testBraces = runParser $ braces identifier 
+testBraces = runParser $ braces identifier              -- will parse an identifier surrounded by {} and nothing else
 
 
 
