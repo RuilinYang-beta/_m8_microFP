@@ -299,6 +299,33 @@ parseIf :: Parser Expr
 parseIf = pure If <*> (between (symbol "if") (parens cond) (symbol "then")) <*> braces expr <* (symbol "else") <*> braces expr
 
 
+
+
+-- ---------- FP4.2 ----------
+{-
+compile - takes a string with microFP code and parses it into a list of functions.
+It parses until some function fails, then it stops and returns the previously parsed functions.
+-}
+compile :: String -> [Func]
+compile functions = [val | f <- separate functions, res@(val,rest) <- runParser func (Stream f), length res > 0]
+
+{-
+separate - a helper function based on Prelude's 'words', rearranged to separate functions on a semicolon.
+-}
+separate s =  case dropWhile (==';') s of
+                      "" -> []
+                      s' -> w : separate s''
+                            where (w, s'') = break' (';'==) s'
+
+{-
+break' - a helper function based on Prelude's 'break', rearranged to keep semicolons in the right function.
+-}
+break' _ xs@[]           =  (xs, xs)
+break' p xs@(x:xs')
+            | p x        =  (x:[],xs)
+            | otherwise  =  let (ys,zs) = break' p xs' in (x:ys,zs)
+
+
 -- ---------- test section ----------
 
 -- ----- test FP3.3 -----
@@ -351,7 +378,7 @@ running tests: testSomeFunctionName (Stream "input to parse")
 
 testFactor = runParser $ factor    -- will parse integers, 'if'-statements, function calls, identifiers or expressions in parentheses
 
-testExpr = runParser $ expr        -- will parse addition, substraction or terms
+testExpr = runParser $ expr        -- will parse addition, subtraction or terms
 
 testTerm = runParser $ term        -- will parse multiplication or factors
 
@@ -398,4 +425,13 @@ testInc'   = pretty $ fst $ head $ testInc
 testEleven'= pretty $ fst $ head $ testEleven
 
 
+-- ----- Test FP4.2 ------
+{-
+these tests show how compilation works on some positive and negative examples
+-}
 
+succeedComp  = compile "fibonacci 0 := 0;\nfibonacci 1 := 1;\nfibonacci n := fibonacci (n-1) + fibonacci (n-2);"
+succeedComp' = compile "twice f x := f (f (x));\n   \n double a := a*2; "
+failComp     = compile "this cannot compile at all"
+failComp'    = compile "twice f x := f (f (x))" -- this example does not have a semicolon at the end
+failComp''   = compile "a:=b; c:= this one cannot compile" -- this example shows that the compiler returns all parsed before fail
