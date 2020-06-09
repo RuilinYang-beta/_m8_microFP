@@ -326,6 +326,88 @@ break' p xs@(x:xs')
             | otherwise  =  let (ys,zs) = break' p xs' in (x:ys,zs)
 
 
+
+-- ---------- FP5.6 ----------
+
+{-
+Note: FP5.6 is only partly finished.
+    It can generate a random Expression 
+    -- this Expression can turn to string, then parsed, then pretty print to the same string.
+    
+    But for unknown reason I cannot generate a random Function, 
+    even when all the component of the Function can be individually generated. 
+-}
+
+-- usage: 
+-- 
+-- to get a random Expr: 
+--     > generate (arbitrary :: Gen Expr)
+-- 
+-- to get a nice string format of the Expr printed to console
+--     > fmap oneExpr (generate (arbitrary :: Gen Expr))
+-- 
+-- to test whether the string format of Expr == parsed format of Expr prettified as string
+--     > quickCheck prop_expr
+-- or  > check
+
+-- for simplicity:
+-- 1 function calls in Expr has only 1 argument
+-- 2 function definition in Func has only 1 argument
+-- 3 number generated are positive, so it looks nicer in string, there won't be sth like -28 + -10
+-- 4 for a condition `Cond Expr Order Expr`, always one Expr is a Constant, the other is a Var
+
+
+-- mysteriously, generate (arbitrary :: Gen Func) has no output
+instance Arbitrary Func where 
+    arbitrary = fmap Assign genFuncName <*> (pure (:[]) <*> (fmap Var genIdName)) <*> (arbitrary :: Gen Expr)
+
+instance Arbitrary Expr where 
+    arbitrary = sized arbExpr
+
+instance Arbitrary Cond where 
+    arbitrary = fmap Cond (fmap Var genIdName) <*> (arbitrary :: Gen Order) <*> (fmap Constant $ fmap abs (arbitrary :: Gen Integer))
+
+instance Arbitrary Order where 
+    arbitrary = oneof [pure Gt, pure Eq, pure Lt]
+
+arbExpr :: Int -> Gen Expr
+arbExpr 0 = oneof [fmap Constant $ fmap abs (arbitrary :: Gen Integer),
+                   fmap Var genIdName
+                   ]
+arbExpr n = frequency [ (1, fmap Constant $ fmap abs (arbitrary :: Gen Integer))
+                       ,(1, fmap Var genIdName) 
+                       ,(3, fmap Add (arbExpr (n `div` 3)) <*> (arbExpr (n `div` 3))) 
+                       ,(3, fmap Mul (arbExpr (n `div` 3)) <*> (arbExpr (n `div` 3))) 
+                       ,(3, fmap Sub (arbExpr (n `div` 3)) <*> (arbExpr (n `div` 3)))
+                       ,(3, fmap FunCall genFuncName <*> genFuncArgs)
+                       ,(2, fmap If (arbitrary :: Gen Cond) <*> (arbExpr (n `div` 3)) <*> (arbExpr (n `div` 3)))
+                        ]
+    where genFuncArgs = pure (:[]) <*> (fmap Var genIdName) 
+
+
+
+genFuncName :: Gen String
+genFuncName = pure (func) <*> oneof pool <*> oneof pool <*> oneof pool
+    where pool = [pure 'f', pure 'g', pure 'h', pure 'k']
+          func = (\c1 c2 c3 -> c1:c2:c3:[])
+
+
+genIdName :: Gen [Char]
+genIdName = pure (func) <*> oneof pool <*> oneof pool <*> oneof pool
+    where pool = [pure 'a', pure 'b', pure 'c', pure 'd', pure 'e']
+          func = (\c1 c2 c3 -> c1:c2:c3:[])
+
+
+prop_expr :: Expr -> Bool
+prop_expr genedExpr = (oneExpr $ fst $ head $ runParser expr $ Stream $ oneExpr genedExpr) == (oneExpr genedExpr)
+
+
+-- QuickCheck: all prop_* tests
+return []
+check = $quickCheckAll
+
+
+
 -- ---------- test section ----------
 
 -- ----- test FP3.3 -----
