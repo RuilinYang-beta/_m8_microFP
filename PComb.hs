@@ -2,6 +2,14 @@
 -- Student 1: Ruilin Yang (s2099497)
 -- Student 2: Joanna Rostek (s2459698)
 
+
+-- ===========================================================================================
+-- Note: about test
+-- In order to provide comprehensive test cases without making the code section unreadable, 
+-- the tests are provided at the end of `BasicParsers.hs`, `MicroFP.hs` and marked with FPx.y
+-- ===========================================================================================
+
+
 module PComb where
 import Control.Applicative
 import Data.Char
@@ -76,11 +84,6 @@ instance Alternative Parser where
         where func = (\input ->  let res1 = runParser parser_a input in
                                  if length res1 /= 0 then res1 else runParser parser_b input)
 
-
--- ---------- test section ----------
-
-p1 = char '1'
-p2 = char '2'
 
 
 
