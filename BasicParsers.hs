@@ -56,7 +56,17 @@ manyPAndS p s = pure mconcat <*> many (pAndS p s)      -- use mconcat to flatten
 pAndS p s = (pure (:[]) <*> s ) *> (pure (:[]) <*> p)  -- parse separator first
 
 
-sep :: Parser a -> Parser b -> Parser [a] 
+{-
+runParser (sep1 idOrInt (symbol "")) (Stream " x y")
+
+should be
+
+([Var "x", Var "y"], Stream "")
+-}
+
+
+
+sep :: Parser a -> Parser b -> Parser [a]
 sep p s = sep1 p s <|> pure ([])
 
 
@@ -78,6 +88,7 @@ identifier = between skip p skip
     where p = pure (:) <*> letter <*> many (letter <|> dig)
 
 
+
 integer :: Parser Integer 
 integer = fmap f $ between skip p skip 
     where p = some (dig)
@@ -88,11 +99,13 @@ symbol str = between skip p skip
     where p = string str
 
 parens :: Parser a -> Parser a 
-parens pa = between (char '(') pa (char ')')
+-- parens pa = between (char '(') pa (char ')')   -- use char or use symbol?
+parens pa = between (symbol "(") pa (symbol ")")   -- symbol better
 
 
 braces :: Parser a -> Parser a 
-braces br = between (char '{') br (char '}')
+-- braces pa = between (char '{') pa (char '}')
+braces pa = between (symbol "{") pa (symbol "}")
 
 
 -- ---------- temp section ----------
@@ -105,13 +118,16 @@ testSkip = runParser $ skip
 
 testWhitespace = runParser $ whitespace letter
 
-testSep = runParser $ sep letter (char ',')
+testSep1 = runParser $ sep1 identifier (char ' ')
+
+
+testSep = runParser $ sep letter (char ',') 
 
 testIdentifier = runParser $ identifier
 
 testInteger = runParser $ integer 
 
-testSymbol = runParser $ symbol "test"
+testSymbol = runParser $ symbol "test" 
 
 testParens = runParser $ parens identifier
 
