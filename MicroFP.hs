@@ -532,3 +532,16 @@ succeedComp' = compile "twice f x := f (f (x));\n   \n double a := a*2; "
 failComp     = compile "this cannot compile at all"
 failComp'    = compile "twice f x := f (f (x))" -- this example does not have a semicolon at the end
 failComp''   = compile "a:=b; c:= this one cannot compile" -- this example shows that the compiler returns all parsed before fail
+
+
+-- ----- Test FP4.3 ------
+{-
+this tests shows how you can build a file and evaluate the last function
+given, that the function can be evaluated (doesn't call other functions).
+Otherwise, the runFile function will hang.
+-}
+
+testRunFile = runFile "functions.txt" [1,2] -- this test will work when the last function in file "functions.txt" takes
+                                            -- at most two arguments and doesn't call other functions
+
+testRunFile' = runFile "functions.txt" [1]  -- in the same circumstances as above, this test will fail
