@@ -192,7 +192,7 @@ reduceListExpr (x:xs) = reduceOneExpr x : reduceListExpr xs
 -- ---------- FP4.1 ----------
 
 func :: Parser Func
-func = pure Assign <*> identifier <*> sep1 idOrInt (symbol ",") <* (symbol ":=") <*> expr <* (symbol ";")
+func = pure Assign <*> identifier <*> sep idOrInt (symbol "") <* (symbol ":=") <*> expr <* (symbol ";")
 
 idOrInt = pure Var <*> identifier
       <|> pure Constant <*> integer
@@ -226,8 +226,9 @@ order = (pure Gt <* symbol ">" )
 factor :: Parser Expr
 factor = pure If <*> (between (symbol "if") cond (symbol "then")) <*> braces expr <* (symbol "else") <*> braces expr
      <|> (parens expr)
-     <|> (pure Var <*> identifier)
+     <|> (pure FunCall <*> identifier <*> parens (sep1 expr (symbol ",")))
      <|> (pure Constant <*> integer)
+     <|> (pure Var <*> identifier)
 
 
 

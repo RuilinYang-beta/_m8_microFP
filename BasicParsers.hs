@@ -74,7 +74,8 @@ string (x:xs) = pure (:) <*> char x <*> string xs
 
 identifier :: Parser String 
 identifier = between skip p skip 
-    where p = some (letter <|> dig)
+    -- where p = some (letter <|> dig)
+    where p = pure (:) <*> letter <*> many (letter <|> dig)
 
 
 integer :: Parser Integer 
@@ -104,15 +105,13 @@ testSkip = runParser $ skip
 
 testWhitespace = runParser $ whitespace letter
 
-testSep1 = runParser $ sep1 letter (char ',')
-
-testSep = runParser $ sep letter (char ',') 
+testSep = runParser $ sep letter (char ',')
 
 testIdentifier = runParser $ identifier
 
 testInteger = runParser $ integer 
 
-testSymbol = runParser $ symbol "test" 
+testSymbol = runParser $ symbol "test"
 
 testParens = runParser $ parens identifier
 
