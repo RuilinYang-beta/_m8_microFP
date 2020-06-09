@@ -30,3 +30,5 @@ fourty := twice (double, 10);
 
 
 main := div (999, 2);
+
+add2 x y := x+y;

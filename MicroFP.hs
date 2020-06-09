@@ -11,6 +11,7 @@ import PComb
 import BasicParsers
 import Test.QuickCheck
 import Test.QuickCheck.All
+import System.IO
 
 
 -- ---------- FP3.1 ----------
@@ -325,6 +326,18 @@ break' p xs@(x:xs')
             | p x        =  (x:[],xs)
             | otherwise  =  let (ys,zs) = break' p xs' in (x:ys,zs)
 
+
+-- ---------- FP4.2 ----------
+runFile :: FilePath -> [Integer] -> IO Expr
+runFile path args = do
+                 content <- readFile path
+                 let func = last $ compile content
+                 return $ eval func (getVars func) (getConsts args)
+
+getVars (Assign _ vars _) = vars
+
+getConsts [] = []
+getConsts (arg:args) = (Constant arg):(getConsts args)
 
 -- ---------- test section ----------
 
