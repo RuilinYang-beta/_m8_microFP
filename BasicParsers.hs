@@ -22,7 +22,7 @@ dig = helper d
 
 l = ['a'..'z'] ++ ['A'..'Z']
 d = ['0'..'9']
-ld = l ++ d
+-- ld = l ++ d
 
 helper :: [Char] -> Parser Char 
 helper []      = failure
@@ -34,8 +34,8 @@ between :: Parser a -> Parser b -> Parser c -> Parser b
 between pa pb pc = pure id <*> (pa *> (pb <* pc))
 
 
-whitespace :: Parser a -> Parser a
-whitespace pa = between skip pa skip
+whitespace :: Parser a -> Parser a 
+whitespace pa = between skip pa skip 
 
 
 skip :: Parser [Char]
@@ -56,6 +56,16 @@ manyPAndS p s = pure mconcat <*> many (pAndS p s)      -- use mconcat to flatten
 pAndS p s = (pure (:[]) <*> s ) *> (pure (:[]) <*> p)  -- parse separator first
 
 
+{-
+runParser (sep1 idOrInt (symbol "")) (Stream " x y")
+
+should be 
+
+([Var "x", Var "y"], Stream "")
+-}
+
+
+
 sep :: Parser a -> Parser b -> Parser [a] 
 sep p s = sep1 p s <|> pure ([])
 
@@ -74,7 +84,9 @@ string (x:xs) = pure (:) <*> char x <*> string xs
 
 identifier :: Parser String 
 identifier = between skip p skip 
-    where p = some (letter <|> dig)
+    -- where p = some (letter <|> dig)
+    where p = pure (:) <*> letter <*> many (letter <|> dig)
+
 
 
 integer :: Parser Integer 
@@ -87,11 +99,13 @@ symbol str = between skip p skip
     where p = string str
 
 parens :: Parser a -> Parser a 
-parens pa = between (char '(') pa (char ')')
+-- parens pa = between (char '(') pa (char ')')   -- use char or use symbol?
+parens pa = between (symbol "(") pa (symbol ")")   -- symbol better
 
 
 braces :: Parser a -> Parser a 
-braces br = between (char '{') br (char '}')
+-- braces pa = between (char '{') pa (char '}')
+braces pa = between (symbol "{") pa (symbol "}")
 
 
 -- ---------- temp section ----------
@@ -102,9 +116,10 @@ testBetween = runParser $ between (char '(') letter (char ')')
 
 testSkip = runParser $ skip
 
-testWhitespace = runParser $ whitespace letter
+testWhitespace = runParser $ whitespace letter 
 
-testSep1 = runParser $ sep1 letter (char ',')
+testSep1 = runParser $ sep1 identifier (char ' ')
+
 
 testSep = runParser $ sep letter (char ',') 
 
@@ -117,7 +132,6 @@ testSymbol = runParser $ symbol "test"
 testParens = runParser $ parens identifier
 
 testBraces = runParser $ braces identifier 
-
 
 
 
