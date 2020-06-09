@@ -1,6 +1,6 @@
 -- Add your names and student numbers to the following file. Do not change anything else, since it is parsed.
--- Student 1: Your Name (sxxxxxxx)
--- Student 2: Other Name (syyyyyyy)
+-- Student 1: Ruilin Yang (s2099497)
+-- Student 2: Joanna Rostek (s2459698)
 
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -15,42 +15,49 @@ import Test.QuickCheck.All
 
 -- ---------- FP3.1 ----------
 
-data Func = Assign String [Expr] Expr   -- in the last there's a ;
+{-
+data Func - describes functions
+-}
+data Func = Assign String [Expr] Expr   deriving (Show, Eq)
 
+{-
+data Expr - describes expressions
+-}
 data Expr = Constant   Integer
-          | Var        String 
+          | Var        String
           | Add        Expr Expr
           | Sub        Expr Expr
           | Mul        Expr Expr
           | FunCall    String [Expr]
           | If         Cond Expr Expr
-          | BinaryOp   Expr Op Expr
-          | Mult       Expr Op Expr
           deriving (Show, Eq)
 
-data Op = Adda | Suba | Mula
-          deriving Eq
-
-instance Show Op where
-    show Adda = "+"
-    show Suba = "-"
-    show Mula = "*"
-
+{-
+data Cond - describes 'if' statement conditions
+-}
 data Cond = Cond Expr Order Expr
           deriving (Show, Eq)
 
+{-
+data Order - describes order types
+-}
 data Order = Gt | Eq | Lt
            deriving (Eq)
 
-
+{-
+Order is an instance of Show - shows order types as their mathematical representation
+-}
 instance Show Order where
-    show Gt = ">" 
+    show Gt = ">"
     show Eq = "=="
     show Lt = "<"
 
 
 -- ---------- FP3.2 ----------
 
+{-
+defining functions corresponding to the ones in "functions.txt"
+-}
 fibonacci = Assign "fibonacci" [(Var "n")] (Add (FunCall "fibonacci" [(Sub (Var "n") (Constant 1))]) (FunCall "fibonacci" [(Sub (Var "n") (Constant 2))]) )
 
 fib = Assign "fib" [(Var "n")] (If (Cond (Var "n") Lt (Constant 3)) (Constant 1) (Add (FunCall "fib" [(Sub (Var "n") (Constant 1))]) (FunCall "fib" [(Sub (Var "n") (Constant 2))])))
@@ -71,8 +78,7 @@ eleven = Assign "eleven" [] (FunCall "inc" [(Constant 10)])
 -- ---------- FP3.3 ----------
 
 {-
-`pretty` takes care of things of `Func` data type
-`oneExpr` and `manyExpr` deals with things of `Expr` type
+`pretty` - prints input of `Func` data type in a readable way
 -}
 pretty :: Func -> String 
 pretty (Assign funcname args funcbody) = funcname ++ " " ++ argString ++ " := "++ funcbodyString ++ ";"
@@ -80,11 +86,13 @@ pretty (Assign funcname args funcbody) = funcname ++ " " ++ argString ++ " := "+
           funcbodyString = oneExpr funcbody
 
 {-
-transform a list of Expr into strings separated by whitespace
+`oneExpr` and `manyExpr` - take care of input of `Expr` data type in order to pass it to pretty
+
+manyExpr - transforms a list of Expr into strings separated by whitespace
 Params:
-1 [Expr]: the list of expression to be stringified
-2 String: the separator, in case of function definition it should be " ";
-                       in case of function call it should be ", ".
+1 [Expr]: the list of expressions to be stringified
+2 String: the separator: in case of function definition it should be " ";
+                         in case of function call it should be ", ".
 3 String: the final result
 -}
 manyExpr :: [Expr] -> String -> String 
@@ -92,12 +100,16 @@ manyExpr expr sep = trim toTrim
     where toTrim = manyExprHelper expr sep
           trim   = (\input -> let len = (length input) - (length sep) in   -- trim the trailing separator
                               take len input)
-
+{-
+manyExprHelper - helper of `manyExpr` resulting in expressions joined by separators
+-}
 manyExprHelper :: [Expr] -> String -> String 
 manyExprHelper [] sep     = []
 manyExprHelper (x:xs) sep = (oneExpr x) ++ sep ++ (manyExprHelper xs sep) 
 
-
+{-
+oneExpr - transforms expressions into readable text using pattern matching
+-}
 oneExpr :: Expr -> String
 oneExpr (Constant c) = show c 
 oneExpr (Var v)      = v
@@ -106,7 +118,7 @@ oneExpr (Sub e1 e2)  = (oneExpr e1) ++ " - " ++ (oneExpr e2)
 oneExpr (Mul e1 e2)  = (oneExpr e1) ++ " * " ++ (oneExpr e2) 
 oneExpr (FunCall fname args)  = fname ++ 
                                 " (" ++ 
-                                (manyExpr args ", ") ++ -- args here should be separated by comma 
+                                (manyExpr args ", ") ++ -- args here should be separated by commas
                                 ")"  
 oneExpr (If cond eThen eElse) =  "if " ++ 
                                  (condString cond) ++ 
@@ -115,9 +127,9 @@ oneExpr (If cond eThen eElse) =  "if " ++
                                  "\n} else {\n\t" ++ 
                                  (oneExpr eElse) ++
                                  "\n}"
+
 {-
-helper of `oneExpr`
-resulting in a string of condition surrounded by ()
+condString - helper of `oneExpr` resulting in a string of conditions surrounded by parentheses
 -}
 condString :: Cond -> String 
 condString (Cond e1 ord e2) = "(" ++ (oneExpr e1) ++ " " ++ (show ord) ++ " " ++ (oneExpr e2) ++ ")"
@@ -125,18 +137,9 @@ condString (Cond e1 ord e2) = "(" ++ (oneExpr e1) ++ " " ++ (show ord) ++ " " ++
 
 -- ---------- FP3.4 ----------
 
-temp = zip [(Var "x"), (Var "y")] [(Constant 1),(Constant 2)]
-
--- does it need a db to store multiple functions??????
-
 {-
-about functions:
-  basic evaluation:         `fib` `div` `add`, maybe `main`
-  need pattern matching:    `sum` `fibonacci`
-  need partial application: `inc` 
-  need higher order func:   `twice`
+eval - evaluates the functions represented with our data types
 -}
-
 -- ----- tier 0: the top-most level -----
 eval :: Func -> [Expr] -> [Expr] -> Expr  -- final end result should be Integer
 eval (Assign fname argsF fbody) args vals = reduceOneExpr (bindOneExpr fbody args vals) func
@@ -148,8 +151,8 @@ eval (Assign fname argsF fbody) args vals = reduceOneExpr (bindOneExpr fbody arg
 Params:
 1 Expr:   the expression containing variables
 2 [Expr]: the variables of concern
-3 [Expr]: the values to be bind to the variables
-4 Expr:   resulting expression
+3 [Expr]: the values to be bound to the variables
+4 Expr:   the resulting expression
 -}
 bindOneExpr :: Expr -> [Expr] -> [Expr] -> Expr
 bindOneExpr (Constant i)  _ _       = Constant i
@@ -170,7 +173,7 @@ bindOneExpr (If (Cond e1 order e2) eThen eElse) args vals = (If (Cond e1' order 
 Params:
 1 [Expr]: the list of expressions that contain variables
 2 [Expr]: the variables of concern
-3 [Expr]: the values to be bind to the variables
+3 [Expr]: the values to be bound to the variables
 4 [Expr]: the resulting list of Expr after binding
 -}
 bindListExpr :: [Expr] -> [Expr] -> [Expr] -> [Expr]
@@ -207,7 +210,6 @@ reduceListExpr (x:xs) func = reduceOneExpr x func : reduceListExpr xs func
 
 
 -- ----- tier 2: helpers of tier 1 functions -----
-
 hasNoVarExpr :: Expr -> Bool
 hasNoVarExpr (Constant i)  = True
 hasNoVarExpr (Var v)       = False
@@ -233,59 +235,70 @@ evalExpr (Constant i) = i
 
 
 -- ---------- FP4.1 ----------
-
+{-
+func - parses functions
+-}
 func :: Parser Func
 func = pure Assign <*> identifier <*> sep idOrInt (symbol "") <* (symbol ":=") <*> expr <* (symbol ";")
 
+{-
+idOrInt - helper function that parses an identifier or an integer
+-}
 idOrInt = pure Var <*> identifier
       <|> pure Constant <*> integer
 
+{-
+term - parses multiplication or goes to factor
+-}
 term :: Parser Expr
-term = pure Mult <*> factor <*> mult <*> term
+term = pure Mul <*> factor <*> (symbol "*" *> term)
    <|> factor
 
-mult :: Parser Op
-mult = pure Mula <* symbol "*"
-
+{-
+expr - parses an expression - addition or subtraction, or goes to term
+-}
 expr :: Parser Expr
-expr = pure BinaryOp <*> term <*> op <*> expr
-   <|> term
+expr =  pure Add <*> term <*> (symbol "+" *> expr)
+    <|> pure Sub <*> term <*> (symbol "-" *> expr)
+    <|> term
 
-op :: Parser Op
-op = pure Adda <* symbol "+"
- <|> pure Suba <* symbol "-"
-
+{-
+cond - parses a condition
+-}
 cond :: Parser Cond
-cond = parens condHelper
+cond = pure Cond <*> expr <*> order <*> expr
 
-condHelper :: Parser Cond
-condHelper = pure Cond <*> expr <*> order <*> expr
-
+{-
+order - parses the order symbols
+-}
 order ::Parser Order
 order = (pure Gt <* symbol ">" )
     <|> (pure Eq <* symbol "==")
     <|> (pure Lt <* symbol "<" )
 
+{-
+factor - parses integers, 'if'-statements (through parseIf), function calls, identifiers or expressions in parentheses
+-}
 factor :: Parser Expr
-factor = pure If <*> (between (symbol "if") cond (symbol "then")) <*> braces expr <* (symbol "else") <*> braces expr
-     <|> (parens expr)
-     <|> (pure FunCall <*> identifier <*> parens (sep1 expr (symbol ",")))
-     <|> (pure Constant <*> integer)
-     <|> (pure Var <*> identifier)
+factor = (pure Constant <*> integer)
+      <|> parseIf
+      <|> pure FunCall <*> identifier <*> parens (sep1 expr (symbol ","))
+      <|> (pure Var <*> identifier)
+      <|> parens expr
+
+{-
+parseIf - parses 'if'-statements
+-}
+parseIf :: Parser Expr
+parseIf = pure If <*> (between (symbol "if") (parens cond) (symbol "then")) <*> braces expr <* (symbol "else") <*> braces expr
 
 
+-- ---------- test section ----------
 
-
-
--- QuickCheck: all prop_* tests
-return []
-check = $quickCheckAll
-
-
-
--- ---------- temp section ----------
-
--- ----- test FP3.3 ----- 
+-- ----- test FP3.3 -----
+{-
+the following will print out a readable version of functions defined in FP3.3
+-}
 pFibo  = putStrLn $ pretty fibonacci
 pFib   = putStrLn $ pretty fib
 pSum'  = putStrLn $ pretty sum' 
@@ -296,7 +309,10 @@ pInc   = putStrLn $ pretty inc
 pEleven = putStrLn $ pretty eleven
 
 
--- ----- test FP3.4 ----- 
+-- ----- test FP3.4 -----
+{-
+the following show how binding works on some examples
+-}
 bindXYZ = [(Var "x"), (Var "y"), (Var "z")]
 bindXY  = [(Var "x"), (Var "y")]
 bindXZ  = [(Var "x"), (Var "z")]
@@ -305,6 +321,9 @@ val3    = [(Constant 10), (Constant 20), (Constant 30)]
 val2    = [(Constant 105), (Constant 10)]
 val1    = [(Constant 8)]
 
+{-
+the following show more complex binding
+-}
 testBindConst = putStrLn $ oneExpr $ bindOneExpr (Constant 99) bindX val3
 testBindVar   = putStrLn $ oneExpr $ bindOneExpr (Var "x") bindXY val2
 testBindVar'  = putStrLn $ oneExpr $ bindOneExpr (Var "z") bindXY val2
@@ -364,16 +383,57 @@ testEvalAdd = eval func [(Var "x"), (Var "y")] valEvalAdd
 
 -- ----- Test FP4.1 ------
 
-testFactor = runParser $ factor
+{-
+running tests: testSomeFunctionName (Stream "input to parse")
+-}
 
-testExpr = runParser $ expr
+testFactor = runParser $ factor -- will parse integers, 'if'-statements, function calls, identifiers or expressions in parentheses
 
-testTerm = runParser $ term
+testExpr = runParser $ expr -- will parse addition, substraction or terms
 
-testCond = runParser $ cond
+testTerm = runParser $ term -- will parse multiplication or factors
 
-testFunc = runParser $ func
+testCond = runParser $ cond -- will parse conditions, e.g. "a>b"
 
-testOrder = runParser $ order
+testFunc = runParser $ func -- will parse function definitions
 
-testCondHelper = runParser $ condHelper
+testOrder = runParser $ order -- will parse order, e.g. "=="
+
+{-
+the following tests can be combined with their counterparts in the block
+below in order to get both the parsed, as well as the readable version
+of a function. Example:
+
+    > testFibo
+    [(Assign "fibonacci" [Var "n"] (Add (FunCall "fibonacci" [Sub (Var "n") (Constant 1)]) (FunCall "fibonacci" [Sub (Var "n") (Constant 2)])),Stream "")]
+
+    > testFibo'
+    "fibonacci n := fibonacci (n - 1) + fibonacci (n - 2);"
+-}
+{-
+the parsed functions:
+-}
+testFibo    = testFunc $ Stream $ pretty fibonacci
+testFib     = testFunc $ Stream $ pretty fib
+testSum     = testFunc $ Stream $ pretty sum'
+testDiv     = testFunc $ Stream $ pretty div'
+testTwice   = testFunc $ Stream $ pretty twice
+testAdd     = testFunc $ Stream $ pretty add
+testInc     = testFunc $ Stream $ pretty inc
+testEleven  = testFunc $ Stream $ pretty eleven
+
+
+{-
+the readable counterparts:
+-}
+testFibo'  = pretty $ fst $ head $ testFibo
+testFib'   = pretty $ fst $ head $ testFib
+testSum'   = pretty $ fst $ head $ testSum
+testDiv'   = pretty $ fst $ head $ testDiv
+testTwice' = pretty $ fst $ head $ testTwice
+testAdd'   = pretty $ fst $ head $ testAdd
+testInc'   = pretty $ fst $ head $ testInc
+testEleven'= pretty $ fst $ head $ testEleven
+
+
+
